@@ -21,6 +21,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner"
 import { useSession } from "next-auth/react"
 
+type Click = {
+  id: string
+  shortUrl: string
+  clickedAt: string
+  ip: string
+  userAgent: string
+}
+
 type Link = {
   id: string
   originalUrl: string
@@ -28,6 +36,7 @@ type Link = {
   clicks: number
   createdAt: string
   lastClickedAt: string
+  clickStats?: Click[]
 }
 
 type DashboardContentProps = {
@@ -43,6 +52,8 @@ export default function DashboardContent({ links, totalClicks, totalLinks, mostC
   const [shortUrl, setShortUrl] = useState("");
   const [isCreatingLink, setIsCreatingLink] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [selectedLink, setSelectedLink] = useState<Link | null>(null)
+  const [isStatsDialogOpen, setIsStatsDialogOpen] = useState(false)
 
   const handleCreateShortLink = async () => {
     if (!newUrl) return
@@ -78,6 +89,18 @@ export default function DashboardContent({ links, totalClicks, totalLinks, mostC
 
   const truncateUrl = (url: string, maxLength = 40) => {
     return url.length > maxLength ? `${url.substring(0, maxLength)}...` : url
+  }
+
+  const handleViewStats = async (link: Link) => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/url/${link.shortUrl}/stats`)
+      if (!response.ok) throw new Error('Failed to fetch stats')
+      const stats = await response.json()
+      setSelectedLink({ ...link, clickStats: stats })
+      setIsStatsDialogOpen(true)
+    } catch{
+      toast.error('Failed to load click statistics')
+    }
   }
 
   return (
@@ -226,6 +249,14 @@ export default function DashboardContent({ links, totalClicks, totalLinks, mostC
                           <Button
                             variant="ghost"
                             size="icon"
+                            onClick={() => handleViewStats(link)}
+                          >
+                            <BarChart className="h-4 w-4" />
+                            <span className="sr-only">Stats</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => {
                               toast.success("Link deleted")
                             }}
@@ -243,6 +274,78 @@ export default function DashboardContent({ links, totalClicks, totalLinks, mostC
           </Card>
         </div>
       </div>
+
+      <Dialog open={isStatsDialogOpen} onOpenChange={setIsStatsDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Click Statistics</DialogTitle>
+            <DialogDescription>
+              Detailed information about clicks for {selectedLink?.shortUrl}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4">
+            {selectedLink?.clickStats && selectedLink.clickStats.length > 0 ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Total Clicks</CardTitle>
+                      <MousePointerClick className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{selectedLink.clickStats.length}</div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Unique IPs</CardTitle>
+                      <BarChart className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {new Set(selectedLink.clickStats.map(click => click.ip)).size}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recent Clicks</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Time</TableHead>
+                          <TableHead>IP Address</TableHead>
+                          <TableHead>Device</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {selectedLink.clickStats.slice(0, 5).map((click) => (
+                          <TableRow key={click.id}>
+                            <TableCell>
+                              {formatDistanceToNow(new Date(click.clickedAt), { addSuffix: true })}
+                            </TableCell>
+                            <TableCell>{click.ip}</TableCell>
+                            <TableCell className="truncate max-w-[200px]">
+                              {click.userAgent}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-muted-foreground">No click data available yet</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
