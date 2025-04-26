@@ -105,16 +105,34 @@ export default function DashboardContent({ links, totalClicks, totalLinks, mostC
                     onChange={(e) => setNewUrl(e.target.value)}
                   />
                 </div>
+                {shortUrl && (
+                <div className="flex items-center">
+                    <div className="flex-1 overflow-hidden">
+                    <a
+                        href={shortUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm break-all"
+                    >
+                        {shortUrl}
+                    </a>
+                    </div>
+                    <Button
+                    onClick={() => copyToClipboard(shortUrl)}
+                    size="sm"
+                    variant="outline"
+                    className="ml-2 flex-shrink-0"
+                    aria-label="Copy to clipboard"
+                    >
+                    <Copy className="h-4 w-4" />
+                    </Button>
+                </div>
+                )}
               </div>
               <DialogFooter>
                 <Button onClick={handleCreateShortLink} disabled={!newUrl || isCreatingLink}>
                   {isCreatingLink ? "Creating..." : "Create Short Link"}
                 </Button>
-                {shortUrl && (
-                  <Button onClick={() => copyToClipboard(shortUrl)}>
-                    Copy Short Link
-                  </Button>
-                )}
               </DialogFooter>
             </DialogContent>
           </Dialog>
