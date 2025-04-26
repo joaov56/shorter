@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"shorter/backend/handlers"
 )
 
 type URL struct {
@@ -31,14 +32,21 @@ func connectDB() {
 	var err error
 	client, err = mongo.Connect(ctx, clientOptions)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error connecting to MongoDB:", err)
 	}
 
 	err = client.Ping(ctx, nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error pinging MongoDB:", err)
 	}
 	fmt.Println("Connected to MongoDB!")
+
+	// List all databases to verify connection
+	databases, err := client.ListDatabaseNames(ctx, bson.M{})
+	if err != nil {
+		log.Fatal("Error listing databases:", err)
+	}
+	fmt.Println("Available databases:", databases)
 }
 
 func createShortURL(w http.ResponseWriter, r *http.Request) {
@@ -106,6 +114,9 @@ func main() {
 
 	router.HandleFunc("/api/url", createShortURL).Methods("POST", "OPTIONS")
 	router.HandleFunc("/api/url/{shortURL}", getLongURL).Methods("GET")
+	router.HandleFunc("/api/users", func(w http.ResponseWriter, r *http.Request) {
+		handlers.RegisterUser(w, r, client)
+	}).Methods("POST", "OPTIONS")
 
 	fmt.Println("Server is running on port 8080")
 	log.Fatal(http.ListenAndServe(":8080", router))
