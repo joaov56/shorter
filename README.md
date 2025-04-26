@@ -1,5 +1,4 @@
 <img width="1510" alt="Captura de Tela 2025-04-25 às 22 05 27" src="https://github.com/user-attachments/assets/694b5e56-5c5d-4945-813f-e5a9d1c962fc" /># URL Shortener
-<img width="1510" alt="Captura de Tela 2025-04-25 às 22 05 27" src="https://github.com/user-attachments/assets/1338f6c9-07a6-494a-aab0-f3f8ba1ff756" />
 
 A URL shortener application built with Go (backend), MongoDB (database), and Next.js (frontend).
 
