@@ -13,12 +13,15 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"shorter/backend/handlers"
+	"shorter/backend/models"
 )
 
 type URL struct {
 	ID        string    `json:"id" bson:"_id,omitempty"`
 	LongURL   string    `json:"long_url" bson:"long_url"`
 	ShortURL  string    `json:"short_url" bson:"short_url"`
+	UserId     string    `json:"userId" bson:"user_id"`
+	Email     string    `json:"email" bson:"email"`
 	CreatedAt time.Time `json:"created_at" bson:"created_at"`
 }
 
@@ -69,6 +72,17 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 
 	url.CreatedAt = time.Now()
 	url.ShortURL = generateShortURL()
+
+	userCollection := client.Database("urlshortener").Collection("users")
+	var user models.User
+
+	err = userCollection.FindOne(context.Background(), bson.M{"email": url.Email}).Decode(&user)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	url.UserId = user.ID
 
 	collection := client.Database("urlshortener").Collection("urls")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { toast } from "sonner"
+import { useSession } from "next-auth/react"
 
 type Link = {
   id: string
@@ -37,6 +38,7 @@ type DashboardContentProps = {
 }
 
 export default function DashboardContent({ links, totalClicks, totalLinks, mostClickedLink }: DashboardContentProps) {
+    const { data: session } = useSession()
   const [newUrl, setNewUrl] = useState("");
   const [shortUrl, setShortUrl] = useState("");
   const [isCreatingLink, setIsCreatingLink] = useState(false)
@@ -53,7 +55,7 @@ export default function DashboardContent({ links, totalClicks, totalLinks, mostC
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ long_url: newUrl }),
+          body: JSON.stringify({ long_url: newUrl, email: session?.user?.email }),
         })
   
         if (!response.ok) {
