@@ -76,13 +76,11 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 	userCollection := client.Database("urlshortener").Collection("users")
 	var user models.User
 
-	err = userCollection.FindOne(context.Background(), bson.M{"email": url.Email}).Decode(&user)
+	err = userCollection.FindOne(context.Background(), bson.M{"_id": url.UserId}).Decode(&user)
 	if err != nil {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
-
-	url.UserId = user.ID
 
 	collection := client.Database("urlshortener").Collection("urls")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -118,6 +116,43 @@ func getLongURL(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(url)
 }
 
+func getUrlsByUserId(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	params := mux.Vars(r)
+	email := params["email"]
+
+	userCollection := client.Database("urlshortener").Collection("users")
+	var user models.User
+
+	err := userCollection.FindOne(context.Background(), bson.M{"email": email}).Decode(&user)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	collection := client.Database("urlshortener").Collection("urls")
+
+	cursor, err := collection.Find(context.Background(), bson.M{"user_id": user.ID})
+	if err != nil {
+		http.Error(w, "Error fetching URLs", http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(context.Background())
+
+	var urls []URL
+	for cursor.Next(context.Background()) {
+		var url URL
+		if err := cursor.Decode(&url); err != nil {
+			http.Error(w, "Error decoding URL", http.StatusInternalServerError)
+			return
+		}
+		urls = append(urls, url)
+	}
+
+	json.NewEncoder(w).Encode(urls)	
+}
 func generateShortURL() string {
 	return fmt.Sprintf("%x", time.Now().UnixNano())[:8]
 }
@@ -127,6 +162,7 @@ func main() {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/api/url", createShortURL).Methods("POST", "OPTIONS")
+	router.HandleFunc("/api/url/getUrlsByUserId/{email}", getUrlsByUserId).Methods("GET")
 	router.HandleFunc("/api/url/{shortURL}", getLongURL).Methods("GET")
 	router.HandleFunc("/api/users", func(w http.ResponseWriter, r *http.Request) {
 		handlers.RegisterUser(w, r, client)
