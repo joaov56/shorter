@@ -37,7 +37,8 @@ type DashboardContentProps = {
 }
 
 export default function DashboardContent({ links, totalClicks, totalLinks, mostClickedLink }: DashboardContentProps) {
-  const [newUrl, setNewUrl] = useState("")
+  const [newUrl, setNewUrl] = useState("");
+  const [shortUrl, setShortUrl] = useState("");
   const [isCreatingLink, setIsCreatingLink] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
@@ -46,14 +47,26 @@ export default function DashboardContent({ links, totalClicks, totalLinks, mostC
 
     setIsCreatingLink(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      // This would be replaced with actual API call to create a shortened link
-      toast.success("Link created")
-      setNewUrl("")
-      setIsCreatingLink(false)
-      setIsDialogOpen(false)
-    }, 1000)
+    try {
+        const response = await fetch("http://localhost:8080/api/url", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ long_url: newUrl }),
+        })
+  
+        if (!response.ok) {
+          throw new Error("Failed to shorten URL")
+        }
+  
+        const data = await response.json()
+        setShortUrl(`http://localhost:3000/${data.short_url}`)
+      } catch {
+        toast.error("Error shortening URL. Please try again.")
+      } finally {
+        setIsCreatingLink(false)
+      }
   }
 
   const copyToClipboard = (text: string) => {
@@ -97,6 +110,11 @@ export default function DashboardContent({ links, totalClicks, totalLinks, mostC
                 <Button onClick={handleCreateShortLink} disabled={!newUrl || isCreatingLink}>
                   {isCreatingLink ? "Creating..." : "Create Short Link"}
                 </Button>
+                {shortUrl && (
+                  <Button onClick={() => copyToClipboard(shortUrl)}>
+                    Copy Short Link
+                  </Button>
+                )}
               </DialogFooter>
             </DialogContent>
           </Dialog>
