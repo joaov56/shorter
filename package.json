@@ -1,0 +1,19 @@
+{
+  "name": "url-shortener",
+  "version": "1.0.0",
+  "description": "URL shortener application with Go backend and Next.js frontend",
+  "scripts": {
+    "start": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "cd backend && go run main.go",
+    "frontend": "cd frontend && npm run dev",
+    "install:all": "npm install && cd frontend && npm install",
+    "build": "cd frontend && npm run build"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "devDependencies": {
+    "@shadcn/ui": "^0.0.4",
+    "concurrently": "^8.2.2"
+  }
+}
