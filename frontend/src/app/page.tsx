@@ -9,18 +9,34 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { toast } from "sonner"
-
+import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
 
 export default function Home() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const [url, setUrl] = useState("")
   const [shortUrl, setShortUrl] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    )
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError("")
+
+    if (!session) {
+      router.push("/auth/signin")
+      return
+    }
 
     try {
       const response = await fetch("http://localhost:8080/api/url", {

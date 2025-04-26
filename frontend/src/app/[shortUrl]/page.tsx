@@ -11,6 +11,12 @@ export default function RedirectPage({ params }: { params: { shortUrl: string } 
   useEffect(() => {
     const fetchOriginalUrl = async () => {
       try {
+        // First increment the click count
+        await fetch(`http://localhost:8080/api/url/${params.shortUrl}/click`, {
+          method: 'POST',
+        });
+
+        // Then fetch the original URL
         const response = await fetch(`http://localhost:8080/api/url/${params.shortUrl}`);
         
         if (!response.ok) {
