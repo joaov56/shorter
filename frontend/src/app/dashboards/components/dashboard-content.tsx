@@ -52,7 +52,7 @@ export default function DashboardContent({ links, totalClicks, totalLinks, mostC
   const [shortUrl, setShortUrl] = useState("");
   const [isCreatingLink, setIsCreatingLink] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [selectedLink, setSelectedLink] = useState<Link | null>(null)
+  const [selectedLink] = useState<Link | null>(null)
   const [isStatsDialogOpen, setIsStatsDialogOpen] = useState(false)
 
   const handleCreateShortLink = async () => {
@@ -222,14 +222,14 @@ export default function DashboardContent({ links, totalClicks, totalLinks, mostC
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => copyToClipboard(link.shortUrl)}>
+                          <Button variant="ghost" size="icon" onClick={() => copyToClipboard(`http://localhost:3000/${link.shortUrl}`)}>
                             <Copy className="h-4 w-4" />
                             <span className="sr-only">Copy</span>
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => window.open(`https://${link.shortUrl}`, "_blank")}
+                            onClick={() => window.open(`http://localhost:3000/${link.shortUrl}`, "_blank")}
                           >
                             <ExternalLink className="h-4 w-4" />
                             <span className="sr-only">Visit</span>
