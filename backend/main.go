@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -40,7 +42,12 @@ func connectDB() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	
-	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+	mongodbURI := os.Getenv("MONGODB_URI")
+	if mongodbURI == "" {
+		mongodbURI = "mongodb://localhost:27017" // valor padrão
+	}
+	
+	clientOptions := options.Client().ApplyURI(mongodbURI)
 	var err error
 	client, err = mongo.Connect(ctx, clientOptions)
 	if err != nil {
@@ -351,7 +358,18 @@ func generateShortURL() string {
 }
 
 func main() {
+	// Carrega as variáveis de ambiente do arquivo .env
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found")
+	}
+
 	connectDB()
+	
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // valor padrão
+	}
+
 	router := mux.NewRouter()
 
 	router.HandleFunc("/api/url", createShortURL).Methods("POST", "OPTIONS")
@@ -364,6 +382,6 @@ func main() {
 		handlers.RegisterUser(w, r, client)
 	}).Methods("POST", "OPTIONS")
 
-	fmt.Println("Server is running on port 8080")
-	log.Fatal(http.ListenAndServe(":8080", router))
+	fmt.Println("Server is running on port", port)
+	log.Fatal(http.ListenAndServe(":"+port, router))
 } 
