@@ -86,7 +86,7 @@ export default function Home() {
                 <Button
                   size="lg"
                   className="bg-white text-blue-700 hover:bg-blue-50"
-                  onClick={() => (session ? router.push("/dashboard") : router.push("/auth/signin"))}
+                  onClick={() => (session ? router.push("/dashboards") : router.push("/auth/signin"))}
                 >
                   {session ? "Go to Dashboard" : "Sign Up Free"}
                   <ArrowRight className="ml-2 h-5 w-5" />
