@@ -88,19 +88,7 @@ export default function DashboardContent({ links, totalClicks, totalLinks, mostC
   }
 
   const truncateUrl = (url: string, maxLength = 40) => {
-    return url.length > maxLength ? `${url.substring(0, maxLength)}...` : url
-  }
-
-  const handleViewStats = async (link: Link) => {
-    try {
-      const response = await fetch(`http://localhost:8080/api/url/${link.shortUrl}/stats`)
-      if (!response.ok) throw new Error('Failed to fetch stats')
-      const stats = await response.json()
-      setSelectedLink({ ...link, clickStats: stats })
-      setIsStatsDialogOpen(true)
-    } catch{
-      toast.error('Failed to load click statistics')
-    }
+    return url?.length > maxLength ? `${url.substring(0, maxLength)}...` : url
   }
 
   return (
@@ -192,8 +180,8 @@ export default function DashboardContent({ links, totalClicks, totalLinks, mostC
               <BarChart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mostClickedLink.clicks} clicks</div>
-              <p className="text-xs text-muted-foreground truncate">{truncateUrl(mostClickedLink.originalUrl)}</p>
+              <div className="text-2xl font-bold">{mostClickedLink?.clicks} clicks</div>
+              <p className="text-xs text-muted-foreground truncate">{truncateUrl(mostClickedLink?.originalUrl)}</p>
             </CardContent>
           </Card>
         </div>
@@ -225,7 +213,7 @@ export default function DashboardContent({ links, totalClicks, totalLinks, mostC
                           {truncateUrl(link.originalUrl)}
                         </span>
                       </TableCell>
-                      <TableCell>{link.clicks}</TableCell>
+                      <TableCell className="text-center">{link.clicks}</TableCell>
                       <TableCell className="hidden md:table-cell">
                         {formatDistanceToNow(new Date(link.createdAt), { addSuffix: true })}
                       </TableCell>
@@ -245,14 +233,6 @@ export default function DashboardContent({ links, totalClicks, totalLinks, mostC
                           >
                             <ExternalLink className="h-4 w-4" />
                             <span className="sr-only">Visit</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleViewStats(link)}
-                          >
-                            <BarChart className="h-4 w-4" />
-                            <span className="sr-only">Stats</span>
                           </Button>
                           <Button
                             variant="ghost"

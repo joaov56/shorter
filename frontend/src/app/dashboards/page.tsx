@@ -39,9 +39,17 @@ export default function DashboardPage() {
         if (!response.ok) throw new Error('Failed to fetch dashboard data');
         
         const data = await response.json();
+
+        if(!data.links) {
+          setLinks([]);
+          setTotalClicks(0);
+          setTotalLinks(0);
+          setMostClickedLink(null);
+          return;
+        }
         
         // Transform the data to match the frontend types
-        const transformedLinks = data.links.map((link : {
+        const transformedLinks = data.links?.map((link : {
           url: {
             id: string;
             long_url: string;
@@ -57,7 +65,7 @@ export default function DashboardPage() {
           clicks: link.stats?.length,
           createdAt: link.url.created_at,
           lastClickedAt: link.stats?.length > 0 
-            ? link.stats[0].clicked_at 
+            ? link.stats[0]?.clicked_at 
             : link.url.created_at,
           stats: link.stats,
         }));
@@ -67,7 +75,7 @@ export default function DashboardPage() {
         setTotalLinks(data.totalLinks);
         
         if (data.mostClickedLink) {
-          const mostClicked = transformedLinks.find(
+          const mostClicked = transformedLinks?.find(
             (link: Link) => link.shortUrl === data.mostClickedLink.short_url
           );
           setMostClickedLink(mostClicked || null);
