@@ -3,7 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function RedirectPage({ params }: { params: { shortUrl: string } }) {
+interface PageProps {
+  params: {
+    shortUrl: string;
+  };
+}
+
+export default function RedirectPage({ params }: PageProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
