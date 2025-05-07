@@ -9,7 +9,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"shorter/backend/models"
+	"shorter/backend/domain"
 )
 
 // RegisterUser handles user registration
@@ -24,7 +24,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request, client *mongo.Client) 
 		return
 	}
 
-	var user models.User
+	var user domain.User
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		log.Printf("Error decoding request body: %v", err)
@@ -41,7 +41,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request, client *mongo.Client) 
 	defer cancel()
 
 	// Check if user already exists
-	var existingUser models.User
+	var existingUser domain.User
 	err = collection.FindOne(ctx, bson.M{"email": user.Email}).Decode(&existingUser)
 	if err == nil {
 		log.Printf("User already exists: %s", user.Email)

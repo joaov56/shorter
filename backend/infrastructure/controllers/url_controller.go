@@ -8,7 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"shorter/backend/models"
+	"shorter/backend/domain"
 )
 
 // CreateShortURL creates a new short URL
@@ -24,7 +24,7 @@ func CreateShortURL(client *mongo.Client) http.HandlerFunc {
 			return
 		}
 
-		var url models.URL
+		var url domain.URL
 		err := json.NewDecoder(r.Body).Decode(&url)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -35,7 +35,7 @@ func CreateShortURL(client *mongo.Client) http.HandlerFunc {
 		url.ShortURL = generateShortURL()
 
 		userCollection := client.Database("urlshortener").Collection("users")
-		var user models.User
+		var user domain.User
 
 		err = userCollection.FindOne(context.Background(), bson.M{"email": url.Email}).Decode(&user)
 		if err != nil {
@@ -68,7 +68,7 @@ func GetLongURL(client *mongo.Client) http.HandlerFunc {
 		params := mux.Vars(r)
 		shortURL := params["shortURL"]
 
-		var url models.URL
+		var url domain.URL
 		collection := client.Database("urlshortener").Collection("urls")
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
@@ -93,7 +93,7 @@ func GetUrlsByUserId(client *mongo.Client) http.HandlerFunc {
 		email := params["email"]
 
 		userCollection := client.Database("urlshortener").Collection("users")
-		var user models.User
+		var user domain.User
 
 		err := userCollection.FindOne(context.Background(), bson.M{"email": email}).Decode(&user)
 		if err != nil {
@@ -110,9 +110,9 @@ func GetUrlsByUserId(client *mongo.Client) http.HandlerFunc {
 		}
 		defer cursor.Close(context.Background())
 
-		var urls []models.URL
+		var urls []domain.URL
 		for cursor.Next(context.Background()) {
-			var url models.URL
+			var url domain.URL
 			if err := cursor.Decode(&url); err != nil {
 				http.Error(w, "Error decoding URL", http.StatusInternalServerError)
 				return
@@ -145,7 +145,7 @@ func IncrementClickCount(client *mongo.Client) http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		var url models.URL
+		var url domain.URL
 		err := urlCollection.FindOne(ctx, bson.M{"short_url": shortURL}).Decode(&url)
 		if err != nil {
 			http.Error(w, "URL not found", http.StatusNotFound)
@@ -153,7 +153,7 @@ func IncrementClickCount(client *mongo.Client) http.HandlerFunc {
 		}
 
 		// Create a new click record
-		click := models.Click{
+		click := domain.Click{
 			ShortURL:  shortURL,
 			ClickedAt: time.Now(),
 			IP:        r.RemoteAddr,
@@ -214,7 +214,7 @@ func GetClickStats(client *mongo.Client) http.HandlerFunc {
 		}
 		defer cursor.Close(ctx)
 
-		var clicks []models.Click
+		var clicks []domain.Click
 		if err = cursor.All(ctx, &clicks); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -235,7 +235,7 @@ func GetUserClickStats(client *mongo.Client) http.HandlerFunc {
 
 		// First get the user
 		userCollection := client.Database("urlshortener").Collection("users")
-		var user models.User
+		var user domain.User
 		err := userCollection.FindOne(context.Background(), bson.M{"email": email}).Decode(&user)
 		if err != nil {
 			http.Error(w, "User not found", http.StatusNotFound)
@@ -251,7 +251,7 @@ func GetUserClickStats(client *mongo.Client) http.HandlerFunc {
 		}
 		defer urlCursor.Close(context.Background())
 
-		var urls []models.URL
+		var urls []domain.URL
 		if err = urlCursor.All(context.Background(), &urls); err != nil {
 			http.Error(w, "Error decoding URLs", http.StatusInternalServerError)
 			return
@@ -260,8 +260,8 @@ func GetUserClickStats(client *mongo.Client) http.HandlerFunc {
 		// Get click stats for each URL
 		clicksCollection := client.Database("urlshortener").Collection("clicks")
 		var urlStats []struct {
-			URL   models.URL     `json:"url"`
-			Stats []models.Click `json:"stats"`
+			URL   domain.URL     `json:"url"`
+			Stats []domain.Click `json:"stats"`
 		}
 
 		for _, url := range urls {
@@ -272,15 +272,15 @@ func GetUserClickStats(client *mongo.Client) http.HandlerFunc {
 			}
 			defer clickCursor.Close(context.Background())
 
-			var clicks []models.Click
+			var clicks []domain.Click
 			if err = clickCursor.All(context.Background(), &clicks); err != nil {
 				http.Error(w, "Error decoding clicks", http.StatusInternalServerError)
 				return
 			}
 
 			urlStats = append(urlStats, struct {
-				URL   models.URL     `json:"url"`
-				Stats []models.Click `json:"stats"`
+				URL   domain.URL     `json:"url"`
+				Stats []domain.Click `json:"stats"`
 			}{
 				URL:   url,
 				Stats: clicks,
