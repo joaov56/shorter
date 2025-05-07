@@ -8,7 +8,8 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
-	"shorter/backend/infrastructure"
+	"shorter/backend/infrastructure/database"
+	httphandler "shorter/backend/infrastructure/http"
 )
 
 func main() {
@@ -16,7 +17,7 @@ func main() {
 		log.Println("No .env file found")
 	}
 
-	infrastructure.ConnectDB()
+	database.ConnectDB()
 	
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -24,7 +25,7 @@ func main() {
 	}
 
 	router := mux.NewRouter()
-	infrastructure.SetupRoutes(router, infrastructure.GetMongoClient())
+	httphandler.SetupRoutes(router, database.GetMongoClient())
 
 	fmt.Println("Server is running on port", port)
 	log.Fatal(http.ListenAndServe(":"+port, router))

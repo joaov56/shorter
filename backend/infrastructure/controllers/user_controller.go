@@ -1,4 +1,4 @@
-package handlers
+package controllers
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"shorter/backend/models"
 )
 
+// RegisterUser handles user registration
 func RegisterUser(w http.ResponseWriter, r *http.Request, client *mongo.Client) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")

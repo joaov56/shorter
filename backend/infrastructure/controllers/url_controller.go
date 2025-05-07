@@ -1,12 +1,10 @@
-package handlers
+package controllers
 
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
-
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -259,61 +257,47 @@ func GetUserClickStats(client *mongo.Client) http.HandlerFunc {
 			return
 		}
 
-		// Get click statistics for each URL
+		// Get click stats for each URL
 		clicksCollection := client.Database("urlshortener").Collection("clicks")
-		type URLWithStats struct {
-			URL    models.URL     `json:"url"`
-			Stats  []models.Click `json:"stats"`
+		var urlStats []struct {
+			URL   models.URL     `json:"url"`
+			Stats []models.Click `json:"stats"`
 		}
 
-		var urlsWithStats []URLWithStats
 		for _, url := range urls {
 			clickCursor, err := clicksCollection.Find(context.Background(), bson.M{"short_url": url.ShortURL})
 			if err != nil {
-				continue
+				http.Error(w, "Error fetching clicks", http.StatusInternalServerError)
+				return
 			}
+			defer clickCursor.Close(context.Background())
 
 			var clicks []models.Click
 			if err = clickCursor.All(context.Background(), &clicks); err != nil {
-				continue
+				http.Error(w, "Error decoding clicks", http.StatusInternalServerError)
+				return
 			}
 
-			urlsWithStats = append(urlsWithStats, URLWithStats{
+			urlStats = append(urlStats, struct {
+				URL   models.URL     `json:"url"`
+				Stats []models.Click `json:"stats"`
+			}{
 				URL:   url,
 				Stats: clicks,
 			})
 		}
 
-		// Calculate total clicks and most clicked link
-		totalClicks := 0
-		var mostClickedLink models.URL
-		maxClicks := 0
-
-		for _, urlWithStats := range urlsWithStats {
-			clicks := len(urlWithStats.Stats)
-			totalClicks += clicks
-			if clicks > maxClicks {
-				maxClicks = clicks
-				mostClickedLink = urlWithStats.URL
-			}
-		}
-
-		response := struct {
-			Links          []URLWithStats `json:"links"`
-			TotalClicks    int            `json:"totalClicks"`
-			TotalLinks     int            `json:"totalLinks"`
-			MostClickedLink models.URL    `json:"mostClickedLink"`
-		}{
-			Links:          urlsWithStats,
-			TotalClicks:    totalClicks,
-			TotalLinks:     len(urls),
-			MostClickedLink: mostClickedLink,
-		}
-
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(urlStats)
 	}
 }
 
+// generateShortURL generates a random short URL
 func generateShortURL() string {
-	return fmt.Sprintf("%x", time.Now().UnixNano())[:8]
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	const length = 6
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[time.Now().UnixNano()%int64(len(charset))]
+	}
+	return string(b)
 } 
