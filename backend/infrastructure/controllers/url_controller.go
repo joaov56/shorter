@@ -257,37 +257,41 @@ func GetUserClickStats(client *mongo.Client) http.HandlerFunc {
 			return
 		}
 
-		// Get click stats for each URL
-		clicksCollection := client.Database("urlshortener").Collection("clicks")
-		var urlStats []struct {
-			URL   domain.URL     `json:"url"`
-			Stats []domain.Click `json:"stats"`
+		// Prepare response structure
+		type Link struct {
+			URL domain.URL `json:"url"`
 		}
 
-		for _, url := range urls {
-			clickCursor, err := clicksCollection.Find(context.Background(), bson.M{"short_url": url.ShortURL})
-			if err != nil {
-				http.Error(w, "Error fetching clicks", http.StatusInternalServerError)
-				return
-			}
-			defer clickCursor.Close(context.Background())
-
-			var clicks []domain.Click
-			if err = clickCursor.All(context.Background(), &clicks); err != nil {
-				http.Error(w, "Error decoding clicks", http.StatusInternalServerError)
-				return
-			}
-
-			urlStats = append(urlStats, struct {
-				URL   domain.URL     `json:"url"`
-				Stats []domain.Click `json:"stats"`
-			}{
-				URL:   url,
-				Stats: clicks,
-			})
+		type DashboardResponse struct {
+			Links          []Link     `json:"links"`
+			MostClickedLink domain.URL `json:"mostClickedLink"`
+			TotalClicks    int        `json:"totalClicks"`
+			TotalLinks     int        `json:"totalLinks"`
 		}
 
-		json.NewEncoder(w).Encode(urlStats)
+		response := DashboardResponse{
+			Links:       make([]Link, len(urls)),
+			TotalLinks:  len(urls),
+			TotalClicks: 0,
+		}
+
+		// Find most clicked link and calculate total clicks
+		var mostClickedURL domain.URL
+		maxClicks := 0
+
+		for i, url := range urls {
+			response.Links[i] = Link{URL: url}
+			response.TotalClicks += url.ClickCount
+
+			if url.ClickCount > maxClicks {
+				maxClicks = url.ClickCount
+				mostClickedURL = url
+			}
+		}
+
+		response.MostClickedLink = mostClickedURL
+
+		json.NewEncoder(w).Encode(response)
 	}
 }
 

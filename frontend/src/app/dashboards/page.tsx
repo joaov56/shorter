@@ -62,7 +62,7 @@ export default function DashboardPage() {
           id: link.url.id,
           originalUrl: link.url.long_url,
           shortUrl: link.url.short_url,
-          clicks: link.stats?.length,
+          clicks: link,
           createdAt: link.url.created_at,
           lastClickedAt: link.stats?.length > 0 
             ? link.stats[0]?.clicked_at 
